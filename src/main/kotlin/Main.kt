@@ -28,7 +28,7 @@ private fun copyLoaderVersionFile(
 ) {
     loaderDir.walk()
         .maxDepth(1)
-        .filter { it.isDirectory && it.name.startsWith(loader) }
+        .filter { it.isDirectory && it.name != "origin" && it != loaderDir }
         .forEach {
             val targetFilePath = it.toPath() / targetFileString
             fileHelper.copy(sourceFile, targetFilePath, it.name, loader)
