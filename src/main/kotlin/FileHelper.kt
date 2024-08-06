@@ -88,7 +88,7 @@ class FileHelper(
                 lineCtx.inBlock = interpret(lineContent, Keys.IF, lineCtx.map)
                 lineCtx.used = lineCtx.inBlock
                 lineCtx.inIfBlock = true
-                lineCtx.firstIfContent = lineContent
+                lineCtx.ifList.add(lineContent)
             }
 
             hasKey(lineContent, Keys.ELSE) && lineCtx.inIfBlock ->

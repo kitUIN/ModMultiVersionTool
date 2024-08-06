@@ -8,7 +8,7 @@ class LineCtx(
     val map: MutableMap<String, String>,
     val forward: Boolean,
     val newLines: MutableList<String> = mutableListOf(),
-    var firstIfContent: String = "",
+    var ifList: MutableList<String> = mutableListOf(),
     var inBlock: Boolean = false,
     var used: Boolean = false,
     var inIfBlock: Boolean = false,
@@ -19,20 +19,27 @@ class LineCtx(
         this.inBlock = false
         this.inIfBlock = false
         this.used = false
+        this.ifList.clear()
     }
 
     private fun firstIf(): Boolean {
-        if (firstIfContent != "") {
-            return interpret(firstIfContent, Keys.IF, map)
+        for (i in ifList) {
+            if (i.startsWith(Keys.IF.value)) {
+                if (!interpret(i, Keys.IF, map)) return false
+            } else {
+                if (!interpret(i, Keys.ELSE_IF, map)) return false
+            }
         }
         return true
     }
 
     fun checkElseIf(lineContent: String): Boolean {
-        return if (inIfBlock) !inBlock && !firstIf() && interpret(
+        val res = if (inIfBlock) !inBlock && !firstIf() && interpret(
             lineContent,
             Keys.ELSE_IF,
             map
         ) else inBlock
+        ifList.add(lineContent)
+        return res
     }
 }
