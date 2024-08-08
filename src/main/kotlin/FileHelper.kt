@@ -165,7 +165,7 @@ class FileHelper(
         targetFilePath: Path,
         folderName: String,
         loader: String,
-        alias: Map<String,List<AliasValue>> = mapOf(),
+        alias: Map<String,List<IAliasValue>> = mapOf(),
         forward: Boolean = true
     ) {
         val lines = sourceFile.readLines()
@@ -192,7 +192,7 @@ class FileHelper(
      * @return 替换后的字符串。
      */
     private fun checkAlias(
-        alias: Map<String, List<AliasValue>>,
+        alias: Map<String, List<IAliasValue>>,
         lineCtx: LineCtx,
         forward: Boolean,
         res: String
@@ -201,11 +201,11 @@ class FileHelper(
         for ((key, values) in alias) {
             for (value in values) {
                 try {
-                    if (Interpreter(value.condition, lineCtx.map).interpret()) {
+                    if (Interpreter(value.condition!!, lineCtx.map).interpret()) {
                         res1 = if (forward) {
-                            res1.replace(key, value.name)
+                            res1.replace(key, value.name!!)
                         } else {
-                            res1.replace(value.name, key)
+                            res1.replace(value.name!!, key)
                         }
                         break
                     }
