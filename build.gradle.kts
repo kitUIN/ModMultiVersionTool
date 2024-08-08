@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "io.github.kituin"
-version = "1.0.4"
+version = "1.1.1.1"
 
 repositories {
     mavenCentral()
@@ -25,6 +25,14 @@ tasks.test {
 kotlin {
     jvmToolchain(8)
 }
+tasks.register<Jar>("sourcesJar") {
+    archiveClassifier.set("sources")
+    from(sourceSets.main.get().allSource)
+}
+tasks.register<Jar>("javadocJar") {
+    archiveClassifier.set("javadoc")
+    from(tasks["javadoc"])
+}
 tasks.jar {
     manifest {
         attributes["Main-Class"] = "io.github.kituin.modmultiversiontool.MainKt"
@@ -42,6 +50,8 @@ publishing {
             version = project.version.toString()
 
             from(components["java"])
+            artifact(tasks["sourcesJar"])
+            artifact(tasks["javadocJar"])
 
             pom {
                 name.set(project.name)

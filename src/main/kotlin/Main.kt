@@ -5,10 +5,23 @@ import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.io.path.*
 
+/**
+ * 遍历指定文件下的所有文件，并返回一个包含所有文件的序列。
+ *
+ * @param file 指定的文件或目录
+ * @return 一个包含所有文件的序列
+ */
 private fun listFiles(file: File): Sequence<File> {
     return file.walk().filter { it.isFile }
 }
 
+/**
+ * 检查指定路径是否为有效的加载器目录。
+ *
+ * @param path 指定的文件或目录
+ * @param loader 加载器的名称
+ * @return 如果路径不存在或不是文件夹，则返回true，否则返回false
+ */
 private fun checkLoaderDir(path: File, loader: String): Boolean {
     if (!path.exists()) {
         println("| Warn | ${loader}为空,跳过")
@@ -21,7 +34,16 @@ private fun checkLoaderDir(path: File, loader: String): Boolean {
     return false
 }
 
-
+/**
+ * 复制加载器目录中的版本文件到目标路径。
+ *
+ * @param loaderDir 加载器目录
+ * @param loader 加载器的名称
+ * @param targetFileString 目标文件路径字符串
+ * @param sourceFile 源文件
+ * @param fileHelper 文件操作辅助类
+ * @param global 是否为全局加载器
+ */
 private fun copyLoaderVersionFile(
     loaderDir: File, loader: String, targetFileString: String, sourceFile: File,
     fileHelper: FileHelper, global: Boolean = false
@@ -35,6 +57,13 @@ private fun copyLoaderVersionFile(
             println("| Info | " + (if (global) "Global" else loader) + " -> ${it.name} | $targetFileString copied")
         }
 }
+/**
+ * 复制加载器目录中的版本文件。
+ *
+ * @param loaderPathFile 加载器路径文件
+ * @param loader 加载器的名称
+ * @param fileHelper 文件操作辅助类
+ */
 private fun copyLoaderVersion(loaderPathFile: File, loader: String, fileHelper: FileHelper) {
     val originFile = File(loaderPathFile, "origin")
     listFiles(originFile)
@@ -43,6 +72,13 @@ private fun copyLoaderVersion(loaderPathFile: File, loader: String, fileHelper: 
             copyLoaderVersionFile(loaderPathFile, loader, targetFileString, sourceFile, fileHelper)
         }
 }
+/**
+ * 复制全局加载器目录中的版本文件到其他加载器目录。
+ *
+ * @param globalOriginFile 全局加载器目录中的origin文件
+ * @param loaders 加载器的名称列表
+ * @param fileHelper 文件操作辅助类
+ */
 fun copyGlobalOriginFile(globalOriginFile: File, loaders: List<String>, fileHelper: FileHelper) {
     listFiles(globalOriginFile).forEach { sourceFile ->
         val targetFileString = sourceFile.toRelativeString(globalOriginFile)
@@ -53,6 +89,12 @@ fun copyGlobalOriginFile(globalOriginFile: File, loaders: List<String>, fileHelp
         }
     }
 }
+/**
+ * 解析XML文件并将其中的所有option元素的value属性值添加到一个列表中。
+ *
+ * @param file 要解析的XML文件
+ * @return 包含所有option元素value属性值的列表
+ */
 fun parseXmlToList(file: File): List<String> {
     val factory = DocumentBuilderFactory.newInstance()
     val builder = factory.newDocumentBuilder()
@@ -68,11 +110,12 @@ fun parseXmlToList(file: File): List<String> {
 
     return list
 }
+
 fun main() {
     val path = System.getProperty("user.dir")
     println("| Info | 项目目录: $path")
-    val modMultiLoaders = File(path,".idea/ModMultiLoaders.xml")
-    val loaders= if(modMultiLoaders.exists()) parseXmlToList(modMultiLoaders)
+    val modMultiLoaders = File(path, ".idea/ModMultiLoaders.xml")
+    val loaders = if (modMultiLoaders.exists()) parseXmlToList(modMultiLoaders)
     else mutableListOf("fabric", "forge", "neoforge", "quilt")
     println("| Info | 读取多版本加载器文件夹配置: $loaders")
     val fileHelper = FileHelper(path)

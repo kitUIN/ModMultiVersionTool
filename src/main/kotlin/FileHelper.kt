@@ -1,5 +1,6 @@
 package io.github.kituin.modmultiversiontool
 
+import io.github.kituin.modmultiversioninterpreter.Interpreter
 import io.github.kituin.modmultiversiontool.LineHelper.Companion.hasKey
 import io.github.kituin.modmultiversiontool.LineHelper.Companion.interpret
 import io.github.kituin.modmultiversiontool.LineHelper.Companion.isComment
@@ -156,6 +157,7 @@ class FileHelper(
      * @param targetFilePath 目标文件路径。
      * @param folderName 文件夹名称。
      * @param loader 加载器名称。
+     * @param alias 别名替换。
      * @param forward 是否正向处理，默认为正向。
      */
     public fun copy(
@@ -163,6 +165,7 @@ class FileHelper(
         targetFilePath: Path,
         folderName: String,
         loader: String,
+        alias: Map<String,List<AliasValue>> = mapOf(),
         forward: Boolean = true
     ) {
         val lines = sourceFile.readLines()
@@ -173,7 +176,44 @@ class FileHelper(
         val lineCtx = LineCtx(targetFile, map, forward)
         extracted(lines, lineCtx)
         checkDirectory(lineCtx)
-        lineCtx.targetFile.writeText(lineCtx.newLines.joinToString("\n"))
+        lineCtx.targetFile.writeText(
+            checkAlias(alias, lineCtx, forward,
+                lineCtx.newLines.joinToString("\n")
+            )
+        )
+    }
+    /**
+     * 检查并替换别名。
+     *
+     * @param alias 包含别名和对应值的映射。
+     * @param lineCtx 包含处理过程中所需信息的上下文对象。
+     * @param forward 是否正向处理。
+     * @param res 需要替换的字符串。
+     * @return 替换后的字符串。
+     */
+    private fun checkAlias(
+        alias: Map<String, List<AliasValue>>,
+        lineCtx: LineCtx,
+        forward: Boolean,
+        res: String
+    ): String {
+        var res1 = res
+        for ((key, values) in alias) {
+            for (value in values) {
+                try {
+                    if (Interpreter(value.condition, lineCtx.map).interpret()) {
+                        res1 = if (forward) {
+                            res1.replace(key, value.name)
+                        } else {
+                            res1.replace(value.name, key)
+                        }
+                        break
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
+        return res1
     }
 
     /**
