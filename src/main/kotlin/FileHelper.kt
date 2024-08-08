@@ -11,6 +11,14 @@ import kotlin.io.path.*
 class FileHelper(
     val projectPath: String
 ) {
+    /**
+     * 创建一个包含特定键值对的映射。
+     *
+     * @param folderName 文件夹名称。
+     * @param targetFilePath 目标文件路径。
+     * @param loader 加载器名称。
+     * @return 包含特定键值对的映射。
+     */
     private fun createMap(
         folderName: String, targetFilePath: Path,
         loader: String
@@ -27,6 +35,14 @@ class FileHelper(
         )
     }
 
+    /**
+     * 检查行内容是否在黑名单或白名单中，并根据特定规则进行处理。
+     *
+     * @param lineContent 行内容。
+     * @param key 关键字，用于判断是黑名单还是白名单。
+     * @param lineCtx 包含处理过程中所需信息的上下文对象。
+     * @return 如果行内容在黑名单或白名单中，则返回true；否则返回false。
+     */
     private fun blackOrWhiteList(lineContent: String, key: Keys, lineCtx: LineCtx): Boolean {
         if (lineCtx.forward && hasKey(lineContent, key)) {
             var delete = interpret(lineContent, key, lineCtx.map)
@@ -38,6 +54,12 @@ class FileHelper(
         return false
     }
 
+    /**
+     * 处理文件头部内容，并根据特定规则进行转换。
+     *
+     * @param lineContent 头部行内容。
+     * @param lineCtx 包含处理过程中所需信息的上下文对象。
+     */
     private fun processHeader(lineContent: String, lineCtx: LineCtx) {
         // 文件头部进行检测
         when {
@@ -61,6 +83,15 @@ class FileHelper(
         }
     }
 
+    /**
+     * 处理每一行内容，并根据特定规则进行转换。
+     *
+     * @param prefix 注释前缀。
+     * @param line 原始行内容。
+     * @param trimmedLine 去除行首空白字符后的行内容。
+     * @param lineContent 去除注释前缀后的行内容。
+     * @param lineCtx 包含处理过程中所需信息的上下文对象。
+     */
     private fun processLine(
         prefix: String, line: String, trimmedLine: String,
         lineContent: String, lineCtx: LineCtx
@@ -102,7 +133,12 @@ class FileHelper(
         }
         if (!trimmedLine.startsWith(prefix) || !lineCtx.oneWay) lineCtx.newLines.add(line)
     }
-
+    /**
+     * 检查目标文件是否为ONEWAY。
+     *
+     * @param targetFile 目标文件对象。
+     * @return 如果目标文件是ONEWAY，则返回true；否则返回false。
+     */
     private fun checkTargetOneWay(targetFile: File): Boolean {
         targetFile.bufferedReader().use { reader ->
             var line: String?
@@ -113,6 +149,15 @@ class FileHelper(
         return false
     }
 
+    /**
+     * 复制源文件到目标路径，并根据特定规则处理和转换内容。
+     *
+     * @param sourceFile 源文件对象。
+     * @param targetFilePath 目标文件路径。
+     * @param folderName 文件夹名称。
+     * @param loader 加载器名称。
+     * @param forward 是否正向处理，默认为正向。
+     */
     public fun copy(
         sourceFile: File,
         targetFilePath: Path,
@@ -126,6 +171,21 @@ class FileHelper(
         // 反向时检测是否是ONEWAY
         if (!forward && checkTargetOneWay(targetFile)) return
         val lineCtx = LineCtx(targetFile, map, forward)
+        extracted(lines, lineCtx)
+        checkDirectory(lineCtx)
+        lineCtx.targetFile.writeText(lineCtx.newLines.joinToString("\n"))
+    }
+
+    /**
+     * 处理给定的行列表，并根据特定规则提取和转换内容。
+     *
+     * @param lines 要处理的行列表。
+     * @param lineCtx 包含处理过程中所需信息的上下文对象。
+     */
+    private fun extracted(
+        lines: List<String>,
+        lineCtx: LineCtx
+    ) {
         var prefix: String? = null
         for (i in lines.indices) {
             val line = lines[i]
@@ -140,10 +200,13 @@ class FileHelper(
                 processLine(prefix, line, trimmedLine, lineContent, lineCtx)
             } ?: lineCtx.newLines.add(line)
         }
-        checkDirectory(lineCtx)
-        lineCtx.targetFile.writeText(lineCtx.newLines.joinToString("\n"))
     }
 
+    /**
+     * 检查目标文件目录是否存在，如果不存在则创建目录和文件。
+     *
+     * @param lineCtx 包含目标文件信息的上下文对象。
+     */
     private fun checkDirectory(lineCtx: LineCtx) {
         if (!lineCtx.targetFile.exists()) {
             lineCtx.targetFile.parentFile.mkdirs()
