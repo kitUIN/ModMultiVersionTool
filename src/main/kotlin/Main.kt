@@ -1,6 +1,9 @@
 package io.github.kituin.modmultiversiontool
 
+import org.w3c.dom.Document
 import org.w3c.dom.Element
+import org.w3c.dom.Node
+import org.w3c.dom.NodeList
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.io.path.*
@@ -45,18 +48,24 @@ private fun checkLoaderDir(path: File, loader: String): Boolean {
  * @param global 是否为全局加载器
  */
 private fun copyLoaderVersionFile(
-    loaderDir: File, loader: String, targetFileString: String, sourceFile: File,
-    fileHelper: FileHelper, global: Boolean = false
+    loaderDir: File,
+    loader: String,
+    targetFileString: String,
+    sourceFile: File,
+    fileHelper: FileHelper,
+    global: Boolean = false,
+    modAlias: MutableMap<String, MutableMap<String, String>> = mutableMapOf()
 ) {
     loaderDir.walk()
         .maxDepth(1)
         .filter { it.isDirectory && it.name != "origin" && it != loaderDir }
         .forEach {
             val targetFilePath = it.toPath() / targetFileString
-            fileHelper.copy(sourceFile, targetFilePath, it.name, loader)
+            fileHelper.copy(sourceFile, targetFilePath, it.name, loader, modAlias)
             println("| Info | " + (if (global) "Global" else loader) + " -> ${it.name} | $targetFileString copied")
         }
 }
+
 /**
  * 复制加载器目录中的版本文件。
  *
@@ -64,14 +73,20 @@ private fun copyLoaderVersionFile(
  * @param loader 加载器的名称
  * @param fileHelper 文件操作辅助类
  */
-private fun copyLoaderVersion(loaderPathFile: File, loader: String, fileHelper: FileHelper) {
+private fun copyLoaderVersion(
+    loaderPathFile: File,
+    loader: String,
+    fileHelper: FileHelper,
+    modAlias: MutableMap<String, MutableMap<String, String>>
+) {
     val originFile = File(loaderPathFile, "origin")
     listFiles(originFile)
         .forEach { sourceFile ->
             val targetFileString = sourceFile.toRelativeString(originFile)
-            copyLoaderVersionFile(loaderPathFile, loader, targetFileString, sourceFile, fileHelper)
+            copyLoaderVersionFile(loaderPathFile, loader, targetFileString, sourceFile, fileHelper, modAlias = modAlias)
         }
 }
+
 /**
  * 复制全局加载器目录中的版本文件到其他加载器目录。
  *
@@ -79,18 +94,24 @@ private fun copyLoaderVersion(loaderPathFile: File, loader: String, fileHelper: 
  * @param loaders 加载器的名称列表
  * @param fileHelper 文件操作辅助类
  */
-fun copyGlobalOriginFile(globalOriginFile: File, loaders: List<String>, fileHelper: FileHelper) {
+fun copyGlobalOriginFile(
+    globalOriginFile: File,
+    loaders: List<String>,
+    fileHelper: FileHelper,
+    modAlias: MutableMap<String, MutableMap<String, String>>
+) {
     listFiles(globalOriginFile).forEach { sourceFile ->
         val targetFileString = sourceFile.toRelativeString(globalOriginFile)
         for (loader in loaders) {
             val loaderPath = Path(fileHelper.projectPath, loader)
             if ((loaderPath / "origin" / targetFileString).exists()) continue
-            copyLoaderVersionFile(loaderPath.toFile(), loader, targetFileString, sourceFile, fileHelper, true)
+            copyLoaderVersionFile(loaderPath.toFile(), loader, targetFileString, sourceFile, fileHelper, true, modAlias)
         }
     }
 }
+
 /**
- * 解析XML文件并将其中的所有option元素的value属性值添加到一个列表中。
+ * 解析文件ModMultiLoaders.xml
  *
  * @param file 要解析的XML文件
  * @return 包含所有option元素value属性值的列表
@@ -111,6 +132,36 @@ fun parseXmlToList(file: File): List<String> {
     return list
 }
 
+/**
+ * 解析文件ModAliasState.xml
+ *
+ * @param file 要解析的XML文件
+ */
+fun parseXmlToModAliasState(file: File): MutableMap<String, MutableMap<String, String>> {
+    val map = mutableMapOf<String, MutableMap<String, String>>()
+    val documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+    val document: Document = documentBuilder.parse(file)
+    document.documentElement.normalize()
+
+    val aliasList: NodeList = document.getElementsByTagName("entry")
+    for (i in 0 until aliasList.length) {
+        val mapNode = (aliasList.item(i) as Element)
+        val key = mapNode.getAttribute("key")
+        if (!mapNode.getAttribute("value").isNullOrEmpty()) continue
+        val innerMap = mutableMapOf<String, String>()
+        val inners = mapNode.getElementsByTagName("entry")
+        for (j in 0 until inners.length) {
+            val innerEntryNode = inners.item(j) as Element
+            val innerKey = innerEntryNode.getAttribute("key")
+            val innerValue = innerEntryNode.getAttribute("value")
+            innerMap[innerKey] = innerValue
+        }
+        map[key] = innerMap
+    }
+    return map
+}
+
+
 fun main() {
     val path = System.getProperty("user.dir")
     println("| Info | 项目目录: $path")
@@ -118,15 +169,19 @@ fun main() {
     val loaders = if (modMultiLoaders.exists()) parseXmlToList(modMultiLoaders)
     else mutableListOf("fabric", "forge", "neoforge", "quilt")
     println("| Info | 读取多版本加载器文件夹配置: $loaders")
+    val modAliasState = File(path, ".idea/ModMultiLoaders.xml")
+    val modAlias = if (modAliasState.exists()) parseXmlToModAliasState(modMultiLoaders)
+    else mutableMapOf()
+    println("| Info | 读取变量替换配置: $modAlias")
     val fileHelper = FileHelper(path)
     println("| Info | 开始进行多版本复制")
     val globalOriginFile = File(path, "origin")
     if (!globalOriginFile.exists()) println("| Warn | 全局文件夹不存在,跳过")
-    else copyGlobalOriginFile(globalOriginFile, loaders, fileHelper)
+    else copyGlobalOriginFile(globalOriginFile, loaders, fileHelper, modAlias)
     for (loader in loaders) {
         val loaderPath = File(path, loader)
         if (checkLoaderDir(loaderPath, loader)) continue
-        copyLoaderVersion(loaderPath, loader, fileHelper)
+        copyLoaderVersion(loaderPath, loader, fileHelper, modAlias)
     }
     println("| Info | 多版本复制结束")
 }
