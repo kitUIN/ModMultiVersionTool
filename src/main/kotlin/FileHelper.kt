@@ -134,6 +134,7 @@ class FileHelper(
         }
         if (!trimmedLine.startsWith(prefix) || !lineCtx.oneWay) lineCtx.newLines.add(line)
     }
+
     /**
      * 检查目标文件是否为ONEWAY。
      *
@@ -168,20 +169,27 @@ class FileHelper(
         alias: MutableMap<String, MutableMap<String, String>> = mutableMapOf(),
         forward: Boolean = true
     ) {
+        val targetFile = targetFilePath.toFile()
+        // 正向, 图片
+        if (sourceFile.isPic() && forward) {
+            sourceFile.copyTo(targetFile, overwrite = true)
+            return
+        }
         val lines = sourceFile.readLines()
         val map = createMap(folderName, if (forward) targetFilePath else sourceFile.toPath(), loader)
-        val targetFile = targetFilePath.toFile()
         // 反向时检测是否是ONEWAY
         if (!forward && checkTargetOneWay(targetFile)) return
         val lineCtx = LineCtx(targetFile, map, forward)
         extracted(lines, lineCtx)
         checkDirectory(lineCtx)
         lineCtx.targetFile.writeText(
-            checkAlias(alias, lineCtx, forward,
+            checkAlias(
+                alias, lineCtx, forward,
                 lineCtx.newLines.joinToString("\n")
             )
         )
     }
+
     /**
      * 检查并替换别名。
      *
@@ -199,7 +207,7 @@ class FileHelper(
     ): String {
         var res1 = res
         for ((key, values) in alias) {
-            for ((innerKey,innerValue) in values) {
+            for ((innerKey, innerValue) in values) {
                 try {
                     if (Interpreter(innerKey, lineCtx.map).interpret()) {
                         res1 = if (forward) {
@@ -255,4 +263,8 @@ class FileHelper(
     }
 
 
+}
+
+private fun File.isPic(): Boolean {
+    return listOf(".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico").any { this.name.endsWith(it) }
 }
