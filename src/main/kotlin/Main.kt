@@ -169,7 +169,7 @@ fun main() {
     else mutableListOf("fabric", "forge", "neoforge", "quilt")
     println("| Info | 读取多版本加载器文件夹配置: $loaders")
     val modAliasState = File(path, ".idea/ModAliasState.xml")
-    val modAlias = if (modAliasState.exists()) parseXmlToModAliasState(modMultiLoaders)
+    val modAlias = if (modAliasState.exists()) parseXmlToModAliasState(modAliasState)
     else mutableMapOf()
     println("| Info | 读取变量替换配置: $modAlias")
     val fileHelper = FileHelper(path)
