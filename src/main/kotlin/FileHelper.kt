@@ -96,43 +96,33 @@ class FileHelper(
     private fun processLine(
         prefix: String, line: String, trimmedLine: String,
         lineContent: String, lineCtx: LineCtx
-    ) {
+    ): String? {
         when {
             hasKey(lineContent, Keys.PRINT) && lineCtx.forward -> {
-                lineCtx.newLines.add(
-                    "$prefix ${
-                        replacement(
-                            lineContent,
-                            Keys.RENAME,
-                            lineCtx.map
-                        )
-                    }"
-                )
-                return
+                return "$prefix ${
+                    replacement(
+                        lineContent,
+                        Keys.RENAME,
+                        lineCtx.map
+                    )
+                }"
             }
 
-            hasKey(lineContent, Keys.ELSE_IF) -> {
-                lineCtx.inBlock = lineCtx.checkElseIf(lineContent)
-                if (lineCtx.inBlock) lineCtx.used = true
-            }
+            hasKey(lineContent, Keys.ELSE_IF) -> lineCtx.newElseIf(lineContent)
 
-            hasKey(lineContent, Keys.IF) -> {
-                lineCtx.inBlock = interpret(lineContent, Keys.IF, lineCtx.map)
-                lineCtx.used = lineCtx.inBlock
-                lineCtx.inIfBlock = true
-                lineCtx.ifList.add(lineContent)
-            }
+            hasKey(lineContent, Keys.IF) -> lineCtx.newIf(lineContent)
 
-            hasKey(lineContent, Keys.ELSE) && lineCtx.inIfBlock ->
-                lineCtx.inBlock = !lineCtx.used && !lineCtx.inBlock
+            hasKey(lineContent, Keys.ELSE) && !lineCtx.isEmpty() && lineCtx.last().inIfBlock -> lineCtx.newElse(
+                lineContent
+            )
 
             hasKey(lineContent, Keys.END_IF) -> lineCtx.clean()
-            lineCtx.inBlock -> {
-                lineCtx.newLines.add(if (lineCtx.forward) trimmedLine.removePrefix(prefix) else "$prefix$line")
-                return
+            !lineCtx.isEmpty() && lineCtx.last().inBlock -> {
+                return if (lineCtx.forward) trimmedLine.removePrefix(prefix) else "$prefix$line"
             }
         }
-        if (!trimmedLine.startsWith(prefix) || !lineCtx.oneWay) lineCtx.newLines.add(line)
+        if (!trimmedLine.startsWith(prefix) || !lineCtx.oneWay) return line
+        return null
     }
 
     /**
@@ -180,14 +170,16 @@ class FileHelper(
         // 反向时检测是否是ONEWAY
         if (!forward && checkTargetOneWay(targetFile)) return
         val lineCtx = LineCtx(targetFile, map, forward)
-        extracted(lines, lineCtx)
+        val newLines = extracted(lines, lineCtx)
         checkDirectory(lineCtx)
-        lineCtx.targetFile.writeText(
-            checkAlias(
-                alias, lineCtx, forward,
-                lineCtx.newLines.joinToString("\n")
+        if (newLines != null) {
+            lineCtx.targetFile.writeText(
+                checkAlias(
+                    alias, lineCtx, forward,
+                    newLines.joinToString("\n")
+                )
             )
-        )
+        }
     }
 
     /**
@@ -230,24 +222,29 @@ class FileHelper(
      * @param lines 要处理的行列表。
      * @param lineCtx 包含处理过程中所需信息的上下文对象。
      */
-    private fun extracted(
+    fun extracted(
         lines: List<String>,
         lineCtx: LineCtx
-    ) {
+    ): MutableList<String>? {
+        val newLines: MutableList<String> = mutableListOf()
         var prefix: String? = null
         for (i in lines.indices) {
             val line = lines[i]
             val trimmedLine = line.trimStart()
             if (prefix == null) prefix = isComment(trimmedLine)
-            prefix?.let {
-                val lineContent = trimmedLine.removePrefix(it).trimStart()
+            if (prefix != null) {
+                val lineContent = trimmedLine.removePrefix(prefix).trimStart()
                 if (i <= 3) {
                     processHeader(lineContent, lineCtx)
-                    if (lineCtx.header) return
+                    if (lineCtx.header) return null
                 }
-                processLine(prefix, line, trimmedLine, lineContent, lineCtx)
-            } ?: lineCtx.newLines.add(line)
+                val s = processLine(prefix, line, trimmedLine, lineContent, lineCtx)
+                if (s != null) newLines.add(s)
+            } else {
+                newLines.add(line)
+            }
         }
+        return newLines
     }
 
     /**
