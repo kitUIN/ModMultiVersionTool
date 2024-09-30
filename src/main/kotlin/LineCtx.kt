@@ -68,8 +68,8 @@ class LineCtx(
         if (last().inBlock) last().used = true
         topIfCheckList[index] += 1
     }
-    fun newElse(lineContent: String) {
-        last().inBlock = !last().used && !last().inBlock
+    fun newElse() {
+        last().inBlock = !last().used && !last().inBlock && checkTopIf()
         topIfCheckList[index] = -1
     }
     fun last(): IfInLine {

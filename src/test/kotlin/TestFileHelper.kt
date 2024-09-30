@@ -125,4 +125,48 @@ public class ReloadConfig implements Command<#CommandSourceStack#>{
 }
         """.trimIndent())
     }
+
+    @Test
+    fun testMulBug() {
+        val lines = """
+// IF <= forge-1.19
+//        renderBackground(matrixStack);
+//        drawCenteredString(matrixStack, this.font,
+//                title, this.width / 2, this.height / 4 - 16, 16764108);
+// ELSE
+// IF forge-1.20
+//        renderBackground(matrixStack);
+// ELSE
+//         renderBackground(matrixStack, mouseX, mouseY, partialTicks);
+// END IF
+//        matrixStack.drawCenteredString(this.font,
+//                title, this.width / 2, this.height / 4 - 16, 16764108);
+// END IF
+        """.trimIndent().split("\n")
+        val lineCtx = LineCtx(
+            Path("").toFile(), mutableMapOf(
+                "$$" to "forge-1.18.2",
+                "\$folder" to "forge/forge-1.18.2",
+                "\$loader" to "forge",
+                "\$fileNameWithoutExtension" to "",
+                "\$fileName" to ""
+            ), forward = true
+        )
+        val newLines = helper.extracted(lines, lineCtx)
+        assertEquals(newLines!!.joinToString("\n"), """
+// IF <= forge-1.19
+        renderBackground(matrixStack);
+        drawCenteredString(matrixStack, this.font,
+                title, this.width / 2, this.height / 4 - 16, 16764108);
+// ELSE
+// IF forge-1.20
+//        renderBackground(matrixStack);
+// ELSE
+//         renderBackground(matrixStack, mouseX, mouseY, partialTicks);
+// END IF
+//        matrixStack.drawCenteredString(this.font,
+//                title, this.width / 2, this.height / 4 - 16, 16764108);
+// END IF
+        """.trimIndent())
+    }
 }

@@ -112,9 +112,7 @@ class FileHelper(
 
             hasKey(lineContent, Keys.IF) -> lineCtx.newIf(lineContent)
 
-            hasKey(lineContent, Keys.ELSE) && !lineCtx.isEmpty() && lineCtx.last().inIfBlock -> lineCtx.newElse(
-                lineContent
-            )
+            hasKey(lineContent, Keys.ELSE) && !lineCtx.isEmpty() && lineCtx.last().inIfBlock -> lineCtx.newElse()
 
             hasKey(lineContent, Keys.END_IF) -> lineCtx.clean()
             !lineCtx.isEmpty() && lineCtx.last().inBlock -> {
