@@ -170,7 +170,7 @@ class FileHelper(
         val lineCtx = LineCtx(targetFile, map, forward)
         val newLines = extracted(lines, lineCtx)
         checkDirectory(lineCtx)
-        if (newLines != null) {
+        if (newLines != null && newLines.isNotEmpty()) {
             lineCtx.targetFile.writeText(
                 checkAlias(
                     alias, lineCtx, forward,
