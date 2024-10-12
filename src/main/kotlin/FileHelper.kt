@@ -169,8 +169,8 @@ class FileHelper(
         if (!forward && checkTargetOneWay(targetFile)) return
         val lineCtx = LineCtx(targetFile, map, forward)
         val newLines = extracted(lines, lineCtx)
-        checkDirectory(lineCtx)
         if (newLines != null && newLines.isNotEmpty()) {
+            checkDirectory(lineCtx)
             lineCtx.targetFile.writeText(
                 checkAlias(
                     alias, lineCtx, forward,

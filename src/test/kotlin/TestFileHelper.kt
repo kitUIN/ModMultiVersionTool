@@ -169,4 +169,39 @@ public class ReloadConfig implements Command<#CommandSourceStack#>{
 // END IF
         """.trimIndent())
     }
+    @Test
+    fun testOnly() {
+        val lines = """
+// ONLY forge-1.16.5
+// IF < forge-1.19
+// IF >= forge-1.16.5
+// 1
+// ELSE IF > forge-1.10
+// 3
+// END IF
+// 2
+// END IF
+        """.trimIndent().split("\n")
+        val lineCtx = LineCtx(
+            Path("").toFile(), mutableMapOf(
+                "$$" to "forge-1.14.5",
+                "\$folder" to "forge/forge-1.16.5",
+                "\$loader" to "forge",
+                "\$fileNameWithoutExtension" to "",
+                "\$fileName" to ""
+            ), forward = true
+        )
+        val newLines = helper.extracted(lines, lineCtx)
+        assertEquals(newLines!!.joinToString("\n"), """
+// IF < forge-1.19
+// IF >= forge-1.16.5
+// 1
+// ELSE IF > forge-1.10
+ 3
+// END IF
+ 2
+// END IF
+        """.trimIndent())
+    }
+
 }
