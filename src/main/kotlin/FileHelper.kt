@@ -168,7 +168,7 @@ class FileHelper(
         // 反向时检测是否是ONEWAY
         if (!forward && checkTargetOneWay(targetFile)) return
         val lineCtx = LineCtx(targetFile, map, forward)
-        val newLines = extracted(lines, lineCtx)
+        val newLines = extracted(lines, lineCtx, sourceFile)
         if (newLines != null && newLines.isNotEmpty()) {
             checkDirectory(lineCtx)
             lineCtx.targetFile.writeText(
@@ -222,7 +222,8 @@ class FileHelper(
      */
     fun extracted(
         lines: List<String>,
-        lineCtx: LineCtx
+        lineCtx: LineCtx,
+        sourceFile: File
     ): MutableList<String>? {
         val newLines: MutableList<String> = mutableListOf()
         var prefix: String? = null
@@ -236,8 +237,15 @@ class FileHelper(
                     processHeader(lineContent, lineCtx)
                     if (lineCtx.header) return null
                 }
-                val s = processLine(prefix, line, trimmedLine, lineContent, lineCtx)
-                if (s != null) newLines.add(s)
+                try {
+                    val processedLine = processLine(prefix, line, trimmedLine, lineContent, lineCtx)
+                    processedLine?.let { newLines.add(it) }
+                } catch (ex: Exception) {
+                    throw Exception(
+                        "Error processing line: $line\n ${sourceFile.path} to ${lineCtx.targetFile.path}",
+                        ex
+                    )
+                }
             } else {
                 newLines.add(line)
             }

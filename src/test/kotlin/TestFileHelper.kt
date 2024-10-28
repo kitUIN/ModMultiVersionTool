@@ -33,7 +33,7 @@ internal class TestFileHelper {
                 "\$fileName" to ""
             ), forward = true
         )
-        val newLines = helper.extracted(lines, lineCtx)
+        val newLines = helper.extracted(lines, lineCtx,File(""))
         assertEquals(newLines!!.joinToString("\n"), """
 // IF < forge-1.19
 // IF >= forge-1.16.5
@@ -91,7 +91,7 @@ public class ReloadConfig implements Command<#CommandSourceStack#>{
                 "\$fileName" to ""
             ), forward = true
         )
-        val newLines = helper.extracted(lines, lineCtx)
+        val newLines = helper.extracted(lines, lineCtx,File(""))
         assertEquals(newLines!!.joinToString("\n"), """
 // 这个注释是用来预防注释符号识别失败
 package io.github.kituin.chatimage.command;
@@ -152,7 +152,7 @@ public class ReloadConfig implements Command<#CommandSourceStack#>{
                 "\$fileName" to ""
             ), forward = true
         )
-        val newLines = helper.extracted(lines, lineCtx)
+        val newLines = helper.extracted(lines, lineCtx,File(""))
         assertEquals(newLines!!.joinToString("\n"), """
 // IF <= forge-1.19
         renderBackground(matrixStack);
