@@ -159,7 +159,7 @@ class FileHelper(
     ) {
         val targetFile = targetFilePath.toFile()
         // 正向, 图片
-        if (sourceFile.isPic() && forward) {
+        if (sourceFile.isWhite() && forward) {
             sourceFile.copyTo(targetFile, overwrite = true)
             return
         }
@@ -268,6 +268,17 @@ class FileHelper(
 
 }
 
-private fun File.isPic(): Boolean {
-    return listOf(".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico").any { this.name.endsWith(it) }
+private fun File.isWhite(): Boolean {
+    return listOf(
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".bmp",
+        ".ico",
+        ".jar",
+        ".zip",
+        ".rar",
+        ".7z",
+    ).any { this.name.endsWith(it) }
 }
