@@ -121,10 +121,10 @@ fun parseXmlToList(file: File): List<String> {
     val document = builder.parse(file)
     val optionElements = document.getElementsByTagName("option")
     val list = mutableListOf<String>()
-
     for (i in 0 until optionElements.length) {
         val element = optionElements.item(i) as Element
         val value = element.getAttribute("value")
+        if (value.isNullOrEmpty()) continue
         list.add(value)
     }
 
