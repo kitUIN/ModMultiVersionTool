@@ -53,7 +53,7 @@ private fun copyLoaderVersionFile(
     sourceFile: File,
     fileHelper: FileHelper,
     global: Boolean = false,
-    modAlias: MutableMap<String, MutableMap<String, String>> = mutableMapOf()
+    modAlias: MutableMap<String, MutableMap<String, String>?> = mutableMapOf()
 ) {
     loaderDir.walk()
         .maxDepth(1)
@@ -76,7 +76,7 @@ private fun copyLoaderVersion(
     loaderPathFile: File,
     loader: String,
     fileHelper: FileHelper,
-    modAlias: MutableMap<String, MutableMap<String, String>>
+    modAlias: MutableMap<String, MutableMap<String, String>?>
 ) {
     val originFile = File(loaderPathFile, "origin")
     listFiles(originFile)
@@ -97,7 +97,7 @@ fun copyGlobalOriginFile(
     globalOriginFile: File,
     loaders: List<String>,
     fileHelper: FileHelper,
-    modAlias: MutableMap<String, MutableMap<String, String>>
+    modAlias: MutableMap<String, MutableMap<String, String>?>
 ) {
     listFiles(globalOriginFile).forEach { sourceFile ->
         val targetFileString = sourceFile.toRelativeString(globalOriginFile)
@@ -136,8 +136,8 @@ fun parseXmlToList(file: File): List<String> {
  *
  * @param file 要解析的XML文件
  */
-fun parseXmlToModAliasState(file: File): MutableMap<String, MutableMap<String, String>> {
-    val map = mutableMapOf<String, MutableMap<String, String>>()
+fun parseXmlToModAliasState(file: File): MutableMap<String, MutableMap<String, String>?> {
+    val map = mutableMapOf<String, MutableMap<String, String>?>()
     val documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
     val document: Document = documentBuilder.parse(file)
     document.documentElement.normalize()

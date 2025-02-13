@@ -154,7 +154,7 @@ class FileHelper(
         targetFilePath: Path,
         folderName: String,
         loader: String,
-        alias: MutableMap<String, MutableMap<String, String>> = mutableMapOf(),
+        alias: MutableMap<String, MutableMap<String, String>?> = mutableMapOf(),
         forward: Boolean = true
     ) {
         val targetFile = targetFilePath.toFile()
@@ -190,13 +190,14 @@ class FileHelper(
      * @return 替换后的字符串。
      */
     private fun checkAlias(
-        alias: MutableMap<String, MutableMap<String, String>> = mutableMapOf(),
+        alias: MutableMap<String, MutableMap<String, String>?> = mutableMapOf(),
         lineCtx: LineCtx,
         forward: Boolean,
         res: String
     ): String {
         var res1 = res
         for ((key, values) in alias) {
+            if(values == null) continue;
             for ((innerKey, innerValue) in values) {
                 try {
                     if (Interpreter(innerKey, lineCtx.map).interpret()) {
