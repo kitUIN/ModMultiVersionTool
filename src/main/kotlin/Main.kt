@@ -52,15 +52,16 @@ private fun copyLoaderVersionFile(
     targetFileString: String,
     sourceFile: File,
     fileHelper: FileHelper,
+    commentMode: CommentMode,
     global: Boolean = false,
-    modAlias: MutableMap<String, MutableMap<String, String>?> = mutableMapOf()
+    modAlias: MutableMap<String, MutableMap<String, String>?> = mutableMapOf(),
 ) {
     loaderDir.walk()
         .maxDepth(1)
         .filter { it.isDirectory && it.name != "origin" && it != loaderDir }
         .forEach {
             val targetFilePath = it.toPath() / targetFileString
-            fileHelper.copy(sourceFile, targetFilePath, it.name, loader, modAlias)
+            fileHelper.copy(sourceFile, targetFilePath, it.name, loader, modAlias, commentMode = commentMode)
             println("| Info | " + (if (global) "Global" else loader) + " -> ${it.name} | $targetFileString copied")
         }
 }
@@ -76,13 +77,22 @@ private fun copyLoaderVersion(
     loaderPathFile: File,
     loader: String,
     fileHelper: FileHelper,
+    commentMode: CommentMode,
     modAlias: MutableMap<String, MutableMap<String, String>?>
 ) {
     val originFile = File(loaderPathFile, "origin")
     listFiles(originFile)
         .forEach { sourceFile ->
             val targetFileString = sourceFile.toRelativeString(originFile)
-            copyLoaderVersionFile(loaderPathFile, loader, targetFileString, sourceFile, fileHelper, modAlias = modAlias)
+            copyLoaderVersionFile(
+                loaderPathFile,
+                loader,
+                targetFileString,
+                sourceFile,
+                fileHelper,
+                commentMode,
+                modAlias = modAlias
+            )
         }
 }
 
@@ -97,6 +107,7 @@ fun copyGlobalOriginFile(
     globalOriginFile: File,
     loaders: List<String>,
     fileHelper: FileHelper,
+    commentMode: CommentMode,
     modAlias: MutableMap<String, MutableMap<String, String>?>
 ) {
     listFiles(globalOriginFile).forEach { sourceFile ->
@@ -104,7 +115,16 @@ fun copyGlobalOriginFile(
         for (loader in loaders) {
             val loaderPath = Path(fileHelper.projectPath, loader)
             if ((loaderPath / "origin" / targetFileString).exists()) continue
-            copyLoaderVersionFile(loaderPath.toFile(), loader, targetFileString, sourceFile, fileHelper, true, modAlias)
+            copyLoaderVersionFile(
+                loaderPath.toFile(),
+                loader,
+                targetFileString,
+                sourceFile,
+                fileHelper,
+                commentMode,
+                true,
+                modAlias
+            )
         }
     }
 }
@@ -115,20 +135,31 @@ fun copyGlobalOriginFile(
  * @param file 要解析的XML文件
  * @return 包含所有option元素value属性值的列表
  */
-fun parseXmlToList(file: File): List<String> {
+fun parseXmlToConfig(file: File): Config {
     val factory = DocumentBuilderFactory.newInstance()
     val builder = factory.newDocumentBuilder()
     val document = builder.parse(file)
     val optionElements = document.getElementsByTagName("option")
-    val list = mutableListOf<String>()
+    var beforeCode: Boolean = false
+    var withOneSpace: Boolean = false
+    var list = mutableListOf<String>()
     for (i in 0 until optionElements.length) {
         val element = optionElements.item(i) as Element
+        val name = element.attributes.getNamedItem("name")?.nodeValue
+        if (name == "commentBeforeCode") {
+            beforeCode = element.getAttribute("value") == "true"
+            continue
+        } else if (name == "commentWithOneSpace") {
+            withOneSpace = element.getAttribute("value") == "true"
+            continue
+        }
+
         val value = element.getAttribute("value")
         if (value.isNullOrEmpty()) continue
         list.add(value)
     }
-
-    return list
+    if (list.isEmpty()) list = mutableListOf("fabric", "forge", "neoforge", "quilt")
+    return Config(list, CommentMode(beforeCode, withOneSpace))
 }
 
 /**
@@ -165,9 +196,11 @@ fun main() {
     val path = System.getProperty("user.dir")
     println("| Info | 项目目录: $path")
     val modMultiLoaders = File(path, ".idea/ModMultiLoaders.xml")
-    val loaders = if (modMultiLoaders.exists()) parseXmlToList(modMultiLoaders)
-    else mutableListOf("fabric", "forge", "neoforge", "quilt")
-    println("| Info | 读取多版本加载器文件夹配置: $loaders")
+    val config = if (modMultiLoaders.exists()) parseXmlToConfig(modMultiLoaders)
+    else Config(mutableListOf("fabric", "forge", "neoforge", "quilt"), CommentMode())
+    println("| Info | 读取多版本加载器文件夹配置: ${config.loaders}")
+    println("| Info | 读取注释格式化配置: 代码前注释：${config.commentMode.beforeCode}")
+    println("| Info | 读取注释格式化配置: 代码前注释带空格：${config.commentMode.withOneSpace}")
     val modAliasState = File(path, ".idea/ModAliasState.xml")
     val modAlias = if (modAliasState.exists()) parseXmlToModAliasState(modAliasState)
     else mutableMapOf()
@@ -176,11 +209,11 @@ fun main() {
     println("| Info | 开始进行多版本复制")
     val globalOriginFile = File(path, "origin")
     if (!globalOriginFile.exists()) println("| Warn | 全局文件夹不存在,跳过")
-    else copyGlobalOriginFile(globalOriginFile, loaders, fileHelper, modAlias)
-    for (loader in loaders) {
+    else copyGlobalOriginFile(globalOriginFile, config.loaders, fileHelper, config.commentMode, modAlias)
+    for (loader in config.loaders) {
         val loaderPath = File(path, loader)
         if (checkLoaderDir(loaderPath, loader)) continue
-        copyLoaderVersion(loaderPath, loader, fileHelper, modAlias)
+        copyLoaderVersion(loaderPath, loader, fileHelper, config.commentMode, modAlias)
     }
     println("| Info | 多版本复制结束")
 }

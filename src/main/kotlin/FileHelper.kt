@@ -115,13 +115,15 @@ class FileHelper(
             hasKey(lineContent, Keys.ELSE) && !lineCtx.isEmpty() && lineCtx.last().inIfBlock -> lineCtx.newElse()
 
             hasKey(lineContent, Keys.END_IF) -> lineCtx.clean()
-            !lineCtx.isEmpty() && lineCtx.last().inBlock -> {
-                return if (lineCtx.forward) trimmedLine.removePrefix(prefix) else "$prefix$line"
-            }
+            !lineCtx.isEmpty() && lineCtx.last().inBlock -> return lineCtx.processLineByComment(
+                line, prefix, trimmedLine
+            )
         }
         if (!trimmedLine.startsWith(prefix) || !lineCtx.oneWay) return line
         return null
     }
+
+
 
     /**
      * 检查目标文件是否为ONEWAY。
@@ -148,6 +150,7 @@ class FileHelper(
      * @param loader 加载器名称。
      * @param alias 别名替换。
      * @param forward 是否正向处理，默认为正向。
+     * @param commentMode 注释模式
      */
     public fun copy(
         sourceFile: File,
@@ -155,7 +158,8 @@ class FileHelper(
         folderName: String,
         loader: String,
         alias: MutableMap<String, MutableMap<String, String>?> = mutableMapOf(),
-        forward: Boolean = true
+        forward: Boolean = true,
+        commentMode: CommentMode = CommentMode(),
     ) {
         val targetFile = targetFilePath.toFile()
         // 正向, 图片
@@ -167,9 +171,9 @@ class FileHelper(
         val map = createMap(folderName, if (forward) targetFilePath else sourceFile.toPath(), loader)
         // 反向时检测是否是ONEWAY
         if (!forward && checkTargetOneWay(targetFile)) return
-        val lineCtx = LineCtx(targetFile, map, forward)
+        val lineCtx = LineCtx(targetFile, map, forward, commentMode=commentMode)
         val newLines = extracted(lines, lineCtx, sourceFile)
-        if (newLines != null && newLines.isNotEmpty()) {
+        if (!newLines.isNullOrEmpty()) {
             checkDirectory(lineCtx)
             lineCtx.targetFile.writeText(
                 checkAlias(
@@ -197,7 +201,7 @@ class FileHelper(
     ): String {
         var res1 = res
         for ((key, values) in alias) {
-            if(values == null) continue;
+            if (values == null) continue;
             for ((innerKey, innerValue) in values) {
                 try {
                     if (Interpreter(innerKey, lineCtx.map).interpret()) {

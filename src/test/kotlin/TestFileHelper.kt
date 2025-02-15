@@ -1,3 +1,4 @@
+import io.github.kituin.modmultiversiontool.CommentMode
 import io.github.kituin.modmultiversiontool.FileHelper
 import io.github.kituin.modmultiversiontool.LineCtx
 import java.io.File
