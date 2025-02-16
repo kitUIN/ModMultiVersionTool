@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "io.github.kituin"
-version = "1.3.10"
+version = "1.4.2"
 
 repositories {
     mavenCentral()
@@ -16,7 +16,7 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("io.github.kituin:ModMultiVersionInterpreter:1.3.10")
+    implementation("io.github.kituin:ModMultiVersionInterpreter:1.4.2")
 }
 
 tasks.test {
