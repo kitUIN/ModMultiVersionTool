@@ -170,4 +170,149 @@ public class ReloadConfig implements Command<#CommandSourceStack#>{
 // END IF
         """.trimIndent())
     }
+    @Test
+    fun testSaBug() {
+        val lines = """
+package io.github.kituin.chatimage.mixin;
+
+import com.google.common.collect.Lists;
+import io.github.kituin.chatimage.tool.ChatImageStyle;
+import io.github.kituin.ChatImageCode.ChatImageBoolean;
+import io.github.kituin.ChatImageCode.ChatImageCode;
+import io.github.kituin.ChatImageCode.ChatImageCodeTool;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
+
+import java.util.List;
+import java.util.Objects;
+
+import static io.github.kituin.ChatImageCode.ChatImageCodeInstance.LOGGER;
+import static io.github.kituin.ChatImageCode.ChatImageCodeInstance.createBuilder;
+import static io.github.kituin.chatimage.tool.ChatImageStyle.SHOW_IMAGE;
+import static io.github.kituin.chatimage.tool.SimpleUtil.*;
+
+
+/**
+ * 注入修改文本显示,自动将CICode转换为可鼠标悬浮格式文字
+ *
+ * @author kitUIN
+ */
+@Mixin(#ChatComponent#.class)
+public class #kituinChatComponentMixinClass# {
+    @Shadow
+    @Final
+    private #MinecraftClient#;
+
+    @ModifyVariable(at = @At("HEAD"),
+            method = "#kituinaddMessageMixin#",
+            argsOnly = true)
+    public #Component# addMessage(#Component# message) {
+        if (#kituinChatImageConfig#.experimentalTextComponentCompatibility) {
+            StringBuilder sb = new StringBuilder();
+            #Component# temp = chatImageflattenTree(message, sb, false);
+            ChatImageBoolean allString = new ChatImageBoolean(true);
+            ChatImageCodeTool.sliceMsg(sb.toString(), true, allString, (e) -> LOGGER.error(e.getMessage()));
+            if (!allString.isValue()) message = temp;
+        }
+        return chatimagereplaceMessage(message);
+    }
+
+// IF >= fabric-1.19
+//    @Unique
+//    private #Component#Content chatImagegetContents(#Component# text){
+//        return text.getContent();
+//    }
+// ELSE IF >= forge-1.19 || > neoforge-1.20.1
+//    @Unique
+//    private #Component#Contents chatImagegetContents(#Component# text){
+//        return text.getContents();
+//    }
+// ELSE
+//    @Unique
+//    private #Component# chatImagegetContents(#Component# text) {
+//        return text;
+//    }
+// END IF
+        """.trimIndent().split("\n")
+        val lineCtx = LineCtx(
+            Path("").toFile(), mutableMapOf(
+                "$$" to "forge-1.19.2",
+                "\$folder" to "forge/forge-1.19.2",
+                "\$loader" to "forge",
+                "\$fileNameWithoutExtension" to "",
+                "\$fileName" to ""
+            ), forward = true
+        )
+        val newLines = helper.extracted(lines, lineCtx,File(".java"))
+        assertEquals(newLines!!.joinToString("\n"), """
+package io.github.kituin.chatimage.mixin;
+
+import com.google.common.collect.Lists;
+import io.github.kituin.chatimage.tool.ChatImageStyle;
+import io.github.kituin.ChatImageCode.ChatImageBoolean;
+import io.github.kituin.ChatImageCode.ChatImageCode;
+import io.github.kituin.ChatImageCode.ChatImageCodeTool;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
+
+import java.util.List;
+import java.util.Objects;
+
+import static io.github.kituin.ChatImageCode.ChatImageCodeInstance.LOGGER;
+import static io.github.kituin.ChatImageCode.ChatImageCodeInstance.createBuilder;
+import static io.github.kituin.chatimage.tool.ChatImageStyle.SHOW_IMAGE;
+import static io.github.kituin.chatimage.tool.SimpleUtil.*;
+
+
+/**
+ * 注入修改文本显示,自动将CICode转换为可鼠标悬浮格式文字
+ *
+ * @author kitUIN
+ */
+@Mixin(#ChatComponent#.class)
+public class #kituinChatComponentMixinClass# {
+    @Shadow
+    @Final
+    private #MinecraftClient#;
+
+    @ModifyVariable(at = @At("HEAD"),
+            method = "#kituinaddMessageMixin#",
+            argsOnly = true)
+    public #Component# addMessage(#Component# message) {
+        if (#kituinChatImageConfig#.experimentalTextComponentCompatibility) {
+            StringBuilder sb = new StringBuilder();
+            #Component# temp = chatImageflattenTree(message, sb, false);
+            ChatImageBoolean allString = new ChatImageBoolean(true);
+            ChatImageCodeTool.sliceMsg(sb.toString(), true, allString, (e) -> LOGGER.error(e.getMessage()));
+            if (!allString.isValue()) message = temp;
+        }
+        return chatimagereplaceMessage(message);
+    }
+
+// IF >= fabric-1.19
+//    @Unique
+//    private #Component#Content chatImagegetContents(#Component# text){
+//        return text.getContent();
+//    }
+// ELSE IF >= forge-1.19 || > neoforge-1.20.1
+    @Unique
+    private #Component#Contents chatImagegetContents(#Component# text){
+        return text.getContents();
+    }
+// ELSE
+//    @Unique
+//    private #Component# chatImagegetContents(#Component# text) {
+//        return text;
+//    }
+// END IF
+        """.trimIndent())
+    }
 }

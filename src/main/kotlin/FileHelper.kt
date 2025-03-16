@@ -124,7 +124,6 @@ class FileHelper(
     }
 
 
-
     /**
      * 检查目标文件是否为ONEWAY。
      *
@@ -171,7 +170,7 @@ class FileHelper(
         val map = createMap(folderName, if (forward) targetFilePath else sourceFile.toPath(), loader)
         // 反向时检测是否是ONEWAY
         if (!forward && checkTargetOneWay(targetFile)) return
-        val lineCtx = LineCtx(targetFile, map, forward, commentMode=commentMode)
+        val lineCtx = LineCtx(targetFile, map, forward, commentMode = commentMode)
         val newLines = extracted(lines, lineCtx, sourceFile)
         if (!newLines.isNullOrEmpty()) {
             checkDirectory(lineCtx)
@@ -232,6 +231,9 @@ class FileHelper(
     ): MutableList<String>? {
         val newLines: MutableList<String> = mutableListOf()
         var prefix: String? = null
+        if (sourceFile.name.endsWith(".kt", true) || sourceFile.name.endsWith(".java", true)) {
+            prefix = "//"
+        }
         for (i in lines.indices) {
             val line = lines[i]
             val trimmedLine = line.trimStart()
