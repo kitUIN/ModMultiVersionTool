@@ -10,7 +10,8 @@ import java.nio.file.Path
 import kotlin.io.path.*
 
 class FileHelper(
-    val projectPath: String
+    val projectPath: String,
+    val worker: IFileCopyWorker,
 ) {
     /**
      * 创建一个包含特定键值对的映射。
@@ -163,7 +164,9 @@ class FileHelper(
         val targetFile = targetFilePath.toFile()
         // 正向, 图片
         if (sourceFile.isWhite() && forward) {
-            sourceFile.copyTo(targetFile, overwrite = true)
+            val content = sourceFile.readBytes()
+            if(worker.isSame(targetFilePath, content)) return
+            worker.copy(targetFilePath, content)
             return
         }
         val lines = sourceFile.readLines()
@@ -172,15 +175,14 @@ class FileHelper(
         if (!forward && checkTargetOneWay(targetFile)) return
         val lineCtx = LineCtx(targetFile, map, forward, commentMode = commentMode)
         val newLines = extracted(lines, lineCtx, sourceFile)
-        if (!newLines.isNullOrEmpty()) {
-            checkDirectory(lineCtx)
-            lineCtx.targetFile.writeText(
-                checkAlias(
-                    alias, lineCtx, forward,
-                    newLines.joinToString("\n")
-                )
-            )
-        }
+        if (newLines.isNullOrEmpty()) return
+        checkDirectory(lineCtx)
+        val content = checkAlias(
+            alias, lineCtx, forward,
+            newLines.joinToString("\n")
+        ).toByteArray()
+        if(worker.isSame(targetFilePath, content)) return
+        worker.copy(targetFilePath, content)
     }
 
     /**

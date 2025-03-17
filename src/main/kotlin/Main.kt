@@ -205,7 +205,7 @@ fun main() {
     val modAlias = if (modAliasState.exists()) parseXmlToModAliasState(modAliasState)
     else mutableMapOf()
     println("| Info | 读取变量替换配置: $modAlias")
-    val fileHelper = FileHelper(path)
+    val fileHelper = FileHelper(path, LocalFileCopyWorker())
     println("| Info | 开始进行多版本复制")
     val globalOriginFile = File(path, "origin")
     if (!globalOriginFile.exists()) println("| Warn | 全局文件夹不存在,跳过")
