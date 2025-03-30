@@ -8,6 +8,6 @@ class LocalFileCopyWorker : IFileCopyWorker {
     }
 
     override fun isSame(targetFilePath: Path, content: ByteArray): Boolean {
-        return targetFilePath.toFile().readBytes() == content
+        return targetFilePath.toFile().readBytes().contentEquals(content)
     }
 }
