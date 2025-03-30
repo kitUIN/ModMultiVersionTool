@@ -1,6 +1,7 @@
 import io.github.kituin.modmultiversiontool.CommentMode
 import io.github.kituin.modmultiversiontool.FileHelper
 import io.github.kituin.modmultiversiontool.LineCtx
+import io.github.kituin.modmultiversiontool.LocalFileCopyWorker
 import java.io.File
 import kotlin.io.path.Path
 import kotlin.test.Test
@@ -10,7 +11,7 @@ import kotlin.test.assertEquals
  * 针对注释模式的新功能测试
  */
 class TestCommentMode {
-    private val helper: FileHelper = FileHelper("")
+    private val helper: FileHelper = FileHelper("", LocalFileCopyWorker())
 
     /**
      * 测试开启代码前注释

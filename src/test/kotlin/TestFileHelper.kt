@@ -1,6 +1,7 @@
 import io.github.kituin.modmultiversiontool.CommentMode
 import io.github.kituin.modmultiversiontool.FileHelper
 import io.github.kituin.modmultiversiontool.LineCtx
+import io.github.kituin.modmultiversiontool.LocalFileCopyWorker
 import java.io.File
 import kotlin.io.path.Path
 import kotlin.test.Test
@@ -8,7 +9,7 @@ import kotlin.test.assertEquals
 
 internal class TestFileHelper {
 
-    private val helper: FileHelper = FileHelper("")
+    private val helper: FileHelper = FileHelper("", LocalFileCopyWorker())
 
     /**
      * 测试嵌套if
