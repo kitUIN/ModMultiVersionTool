@@ -181,8 +181,8 @@ class FileHelper(
             alias, lineCtx, forward,
             newLines.joinToString("\n")
         ).toByteArray()
-        if(worker.isSame(targetFilePath, content)) return
-        worker.copy(targetFilePath, content)
+        if(worker.isSame(lineCtx.targetFile.toPath(), content)) return
+        worker.copy(lineCtx.targetFile.toPath(), content)
     }
 
     /**
@@ -202,7 +202,7 @@ class FileHelper(
     ): String {
         var res1 = res
         for ((key, values) in alias) {
-            if (values == null) continue;
+            if (values == null) continue
             for ((innerKey, innerValue) in values) {
                 try {
                     if (Interpreter(innerKey, lineCtx.map).interpret()) {
