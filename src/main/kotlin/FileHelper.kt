@@ -166,7 +166,7 @@ class FileHelper(
         if (sourceFile.isWhite() && forward) {
             val content = sourceFile.readBytes()
             if(worker.isSame(targetFilePath, content)) return
-            worker.copy(targetFilePath, content)
+            sourceFile.copyTo(targetFile);
             return
         }
         val lines = sourceFile.readLines()
