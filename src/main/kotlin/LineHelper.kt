@@ -15,12 +15,8 @@ class LineHelper {
 
         @JvmStatic
         fun hasKey(line: String, key: Keys, unknownComment: Boolean = false): Boolean {
-            if (unknownComment) {
-                isComment(line)?.let {
-                    return line.removePrefix(it).trimStart().startsWith(key.value)
-                } ?: return false
-            }
-            return line.startsWith(key.value)
+            if (key == Keys.END_IF || key == Keys.ELSE || key == Keys.PRINT || key == Keys.ONEWAY) return line.startsWith(key.value)
+            return line.startsWith(key.value + " ")
         }
 
         @JvmStatic
