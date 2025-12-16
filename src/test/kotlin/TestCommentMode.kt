@@ -189,4 +189,43 @@ public class ReloadConfig implements Command<#CommandSourceStack#>{
 }
         """.trimIndent())
     }
+    @Test
+    fun testOneWay() {
+        val lines = """
+// ONEWAY
+// RENAME test.java
+package io.github.kituin.chatimage.command;
+public class ReloadConfig implements Command<#CommandSourceStack#>{
+    @Override
+    public int run(CommandContext<#CommandSourceStack#>context) {
+        ))
+//      IF forge-1.16.5
+//         CONFIG = ChatImageConfig.loadConfig();
+//      END IF
+        return Command.SINGLE_SUCCESS;
+    }
+}
+        """.trimIndent().split("\n")
+        val lineCtx = LineCtx(
+            Path("").toFile(), mutableMapOf(
+                "$$" to "forge-1.16.5",
+                "\$folder" to "forge/forge-1.16.5",
+                "\$loader" to "forge",
+                "\$fileNameWithoutExtension" to "",
+                "\$fileName" to ""
+            ), forward = true, commentMode = CommentMode(beforeCode = true, withOneSpace = true)
+        )
+        val newLines = helper.extracted(lines, lineCtx, File(""))
+        assertEquals(newLines!!.joinToString("\n"), """
+package io.github.kituin.chatimage.command;
+public class ReloadConfig implements Command<#CommandSourceStack#>{
+    @Override
+    public int run(CommandContext<#CommandSourceStack#>context) {
+        ))
+        CONFIG = ChatImageConfig.loadConfig();
+        return Command.SINGLE_SUCCESS;
+    }
+}
+        """.trimIndent())
+    }
 }
